@@ -2,6 +2,7 @@ import time
 
 import pytest
 import requests
+from curl_cffi import requests as curl_requests
 
 from nodes.mail import CloudMail, extract_code
 
@@ -42,6 +43,17 @@ def test_extracts_ten_character_verification_code_from_html_preserving_case(code
 
 
 @pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        ("YOUR CODE: 53429B6C0F", "53429B6C0F"),
+        ("Your code: 53429b6c0f", "53429b6c0f"),
+    ],
+)
+def test_extracts_proxyscrape_your_code_label(body, expected):
+    assert extract_code(message(text=body)) == expected
+
+
+@pytest.mark.parametrize(
     "text",
     [
         "Your verification code expires in five minutes.",
@@ -55,6 +67,15 @@ def test_does_not_guess_or_truncate_an_alphanumeric_code(text):
 
 def test_ambiguous_numbers_are_not_used_as_a_code():
     assert extract_code(message(text="Contact 12345678 or 87654321")) is None
+
+
+def test_default_mail_session_uses_browser_impersonation():
+    mail = CloudMail("https://mail.example.org", "me@example.org", "secret")
+    try:
+        assert isinstance(mail.session, curl_requests.Session)
+        assert mail.session.impersonate == "chrome"
+    finally:
+        mail.session.close()
 
 
 class MailSession:

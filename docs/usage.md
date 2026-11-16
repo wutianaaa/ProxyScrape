@@ -19,7 +19,7 @@ JSON 配置适用于本机 Python 运行。默认 Docker 配置不会复制或�
 | `TURNSTILE_EXTENSION_PATH` | `turnstile_extension_path` | 可选，扩展目录，默认使用安装包内的 `nodes/resources/turnstile/` |
 | `RESIN_URL` | `resin_url` | 可选，Resin 站点地址，不包含 `/api/v1` |
 | `RESIN_ADMIN_TOKEN` | `resin_admin_token` | 可选，Resin 管理令牌，与站点地址同时填写后启用自动同步 |
-| `RESIN_SUBSCRIPTION_NAME` | `resin_subscription_name` | 专用本地订阅名，默认为 `nodes` |
+| `RESIN_SUBSCRIPTION_NAME` | `resin_subscription_name` | Resin 本地订阅名前缀；实际名称为 `<name>-YYYYMMDD`，例如 `nodes-20261113`，默认 `nodes` |
 
 Docker 镜像已配置 `/usr/bin/chromium`，一般不需要指定浏览器路径。不要把宿主机的 macOS 或 Windows 浏览器路径传入 Linux 容器。
 
@@ -156,6 +156,8 @@ RESIN_URL=https://resin.example.org
 RESIN_ADMIN_TOKEN="你的管理令牌"
 RESIN_SUBSCRIPTION_NAME=nodes
 ```
+
+实际订阅名会自动追加本地日期，例如 `RESIN_SUBSCRIPTION_NAME=nodes` 导入到 `nodes-20261113`。
 
 使用管理令牌，不是代理请求用的 `RESIN_PROXY_TOKEN`。地址和令牌均留空时不连接 Resin；只填写其中一项会报配置错误。`--check-mail` 不执行同步。
 

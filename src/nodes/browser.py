@@ -14,7 +14,7 @@ from .config import DEFAULT_EXTENSION, load_config
 from .console import log
 
 
-def browser_options(hidden=False, browser_path="", extension_path=""):
+def browser_options(hidden=False, browser_path="", extension_path="", proxy=""):
     """Use a real browser window; Linux servers supply DISPLAY through Xvfb."""
     if platform.system() == "Linux" and not os.environ.get("DISPLAY"):
         raise RuntimeError(
@@ -59,6 +59,8 @@ def browser_options(hidden=False, browser_path="", extension_path=""):
         options.set_argument(flag)
     if hidden:
         options.set_argument("--window-position=-32000,-32000")
+    if proxy:
+        options.set_proxy(proxy)
     options.add_extension(str(extension))
     return options
 
@@ -121,6 +123,7 @@ def solve_turnstile(headless=False, timeout=120, config=None):
         headless,
         config["browser_path"],
         config["turnstile_extension_path"],
+        config.get("browser_proxy", ""),
     )
     browser = Chromium(opts)
     tab = browser.latest_tab

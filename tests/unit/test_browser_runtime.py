@@ -44,6 +44,11 @@ def test_explicit_browser_path_overrides_discovery(linux_display):
     assert options.browser_path == "/opt/google/chrome/chrome"
 
 
+def test_browser_proxy_is_passed_to_chromium(linux_display):
+    options = browser_options(proxy="http://127.0.0.1:7890")
+    assert "--proxy-server=http://127.0.0.1:7890" in options.arguments
+
+
 def test_visible_browser_does_not_move_offscreen(linux_display):
     options = browser_options(hidden=False)
     assert not any(arg.startswith("--window-position") for arg in options.arguments)

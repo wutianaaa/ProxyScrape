@@ -25,6 +25,22 @@ def relaunch_with_display(argv):
     )
 
 
+def configure_http_proxy(proxy):
+    if not proxy:
+        return
+    for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+        os.environ.setdefault(name, proxy)
+    required = ("127.0.0.1", "localhost", "100.66.1.8")
+    no_proxy = os.environ.get("NO_PROXY") or os.environ.get("no_proxy") or ""
+    entries = [item.strip() for item in no_proxy.split(",") if item.strip()]
+    for host in required:
+        if host not in entries:
+            entries.append(host)
+    value = ",".join(entries)
+    os.environ["NO_PROXY"] = value
+    os.environ["no_proxy"] = value
+
+
 def _ask(prompt, default):
     try:
         v = input(prompt).strip()
@@ -90,6 +106,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         config = load_config(Path.cwd())
+        configure_http_proxy(config.get("browser_proxy", ""))
         resin_enabled = False
         if not args.check_mail:
             resin_enabled = resin.configured(config, required=args.sync_resin)

@@ -52,6 +52,22 @@ class Mail:
         return "aB3dE6gH9j"
 
 
+def test_verify_email_normalizes_code_to_lowercase():
+    captured = {}
+
+    class VerifySession:
+        def post(self, url, **kwargs):
+            captured.update(kwargs)
+            response = requests.Response()
+            response.status_code = 200
+            response.url = url
+            response._content = b'{"success":true}'
+            return response
+
+    api.verify_email(VerifySession(), "access-token", "aB3dE6gH9j")
+    assert captured["files"]["verificationCode"][1] == "ab3de6gh9j"
+
+
 def setup_flow(monkeypatch):
     monkeypatch.setattr(app, "CloudMail", Mail)
     monkeypatch.setattr(app, "solve_turnstile", lambda **kw: "challenge-token")

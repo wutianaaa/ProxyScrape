@@ -94,7 +94,7 @@ def api_server():
                 elif path == "/verify":
                     assert "multipart/form-data" in self.headers["Content-Type"]
                     assert b'name="verificationCode"' in body
-                    assert b"aB3dE6gH9j" in body
+                    assert b"ab3de6gh9j" in body
                     state["verified"] = True
                     result = {"success": True}
                 elif path == "/me":

@@ -3,6 +3,7 @@
   "cloud_mail_email": "",
   "cloud_mail_password": "",
   "browser_path": "",
+  "browser_proxy": "",
   "turnstile_extension_path": "",
   "resin_url": "",
   "resin_admin_token": "",

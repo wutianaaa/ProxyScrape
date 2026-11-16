@@ -18,7 +18,8 @@ Fork 本仓库，在你自己的仓库中打开 **Settings → Secrets and varia
 
 也可以通过 GitHub CLI 交互输入，例如 `gh secret set CLOUD_MAIL_PASSWORD --repo 你的用户名/nodes`。不要将凭据写进工作流或提交 `.env`。
 
-默认合并到 Resin 的 `nodes` 专用本地订阅。修改名称时，在同一设置页的 **Variables** 中添加 `RESIN_SUBSCRIPTION_NAME`，详见 [Resin 同步规则](usage.md#resin-自动导入)。已有订阅的节点会保留并去重。
+默认合并到 Resin 的 `nodes-YYYYMMDD` 专用本地订阅（例如 `nodes-20261113`）。修改名称前缀时，在同一设置页的 **Variables** 中添加 `RESIN_SUBSCRIPTION_NAME`，详见 [Resin 同步规则](usage.md#resin-自动导入)。已有订阅的节点会保留并去重。
+实际订阅名会自动追加本地日期，例如 `nodes` 导入到 `nodes-20261113`。
 
 ## 首次检查与手动运行
 

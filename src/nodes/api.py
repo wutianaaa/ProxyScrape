@@ -62,7 +62,7 @@ def verify_email(session, access_token, code):
     r = session.post(
         PS_VERIFY_EMAIL,
         headers={"Authorization": f"Bearer {access_token}"},
-        files={"verificationCode": (None, code)},
+        files={"verificationCode": (None, code.lower())},
         timeout=30,
     )
     log(f"验邮箱响应 HTTP {r.status_code}")

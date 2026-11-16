@@ -1,5 +1,6 @@
 """Merge exported HTTP proxies into one Resin local subscription."""
 
+from datetime import date
 from pathlib import Path
 
 import requests
@@ -15,6 +16,11 @@ def configured(config, *, required=False):
     if missing:
         raise ValueError("缺少 Resin 配置: " + ", ".join(missing))
     return True
+
+
+def _subscription_name(config):
+    base = config.get("resin_subscription_name") or "nodes"
+    return f"{base}-{date.today():%Y%m%d}"
 
 
 def _proxy_lines(content):
@@ -55,7 +61,7 @@ def sync(config, *, root=None, skip_empty=False):
             return 0
         raise ValueError(f"在 {root / 'node'} 中没有可同步的 proxies_*.txt 节点")
 
-    name = config.get("resin_subscription_name") or "nodes"
+    name = _subscription_name(config)
     base_url = config["resin_url"].rstrip("/") + "/api/v1"
     try:
         with requests.Session() as session:

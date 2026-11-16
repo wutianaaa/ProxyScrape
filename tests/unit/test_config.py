@@ -22,6 +22,12 @@ def test_environment_overrides_json_and_dotenv(tmp_path):
     assert config["cloud_mail_password"] == "dotenv#secret"
 
 
+def test_browser_proxy_is_loaded_and_trimmed(tmp_path):
+    (tmp_path / ".env").write_text("BROWSER_PROXY= http://127.0.0.1:7890 \n")
+    config = load_config(tmp_path, environ={})
+    assert config["browser_proxy"] == "http://127.0.0.1:7890"
+
+
 def test_missing_config_is_allowed_until_run(tmp_path):
     config = load_config(tmp_path, environ={})
     assert config["cloud_mail_password"] == ""

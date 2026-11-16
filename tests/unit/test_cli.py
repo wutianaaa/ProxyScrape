@@ -13,6 +13,16 @@ CONFIG = {
 }
 
 
+def test_browser_proxy_configures_http_proxy_environment(monkeypatch):
+    for key in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
+        monkeypatch.delenv(key, raising=False)
+    cli.configure_http_proxy("http://127.0.0.1:7890")
+    assert os.environ["HTTP_PROXY"] == "http://127.0.0.1:7890"
+    assert os.environ["HTTPS_PROXY"] == "http://127.0.0.1:7890"
+    assert "127.0.0.1" in os.environ["NO_PROXY"]
+    assert "100.66.1.8" in os.environ["NO_PROXY"]
+
+
 def test_batch_cli_does_not_prompt_and_propagates_failure(monkeypatch):
     monkeypatch.setattr(cli, "load_config", lambda path: CONFIG)
     monkeypatch.setattr(cli, "relaunch_with_display", lambda argv: None)

@@ -7,6 +7,7 @@ from html.parser import HTMLParser
 from threading import RLock
 
 import requests
+from curl_cffi import requests as curl_requests
 
 
 class _MailText(HTMLParser):
@@ -34,7 +35,7 @@ def extract_code(message: dict) -> str | None:
     text = " ".join([message.get("subject") or "", message.get("text") or "", *parser.parts])
     # 仅处理邮件文本，不从 URL、CSS 或 HTML 属性中猜验证码。
     contextual = re.search(
-        r"(?:verification\s+code|verify\s+code|security\s+code|验证码)"
+        r"(?:verification\s+code|verify\s+code|security\s+code|your\s+code|验证码)"
         r"\s*(?:is\s*)?[:：\-]?\s*([A-Z0-9]{10}|\d{4,8})(?!\w)",
         text,
         re.IGNORECASE,
@@ -52,7 +53,7 @@ class CloudMail:
         self.password = password
         self.token = None
         self.accounts = {}
-        self.session = session or requests.Session()
+        self.session = session or curl_requests.Session(impersonate="chrome")
         self._request_lock = RLock()
 
     def _send(self, method: str, path: str, **kwargs):
@@ -64,7 +65,7 @@ class CloudMail:
         response.raise_for_status()
         try:
             body = response.json()
-        except requests.exceptions.JSONDecodeError as exc:
+        except ValueError as exc:
             raise RuntimeError(
                 f"Cloud Mail {method} {path} 返回的不是 JSON，请检查 CLOUD_MAIL_URL"
             ) from exc

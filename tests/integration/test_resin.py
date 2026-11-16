@@ -3,6 +3,7 @@
 import json
 import socket
 import threading
+from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
@@ -15,8 +16,15 @@ PROXY_B = "http://account-b:secret@127.0.0.2:8001"
 PROXY_OLD = "http://old-account:secret@127.0.0.3:8002"
 
 
+class FixedDate(date):
+    @classmethod
+    def today(cls):
+        return cls(2026, 11, 13)
+
+
 @pytest.fixture
-def resin_server():
+def resin_server(monkeypatch):
+    monkeypatch.setattr(resin, "date", FixedDate)
     state = {
         "subscriptions": [],
         "requests": [],
@@ -129,7 +137,7 @@ def export(root, name, *proxies):
 def subscription(**overrides):
     return {
         "id": "existing",
-        "name": "nodes-dedicated",
+        "name": "nodes-dedicated-20261113",
         "source_type": "local",
         "content": PROXY_OLD + "\n",
         "last_error": "",
@@ -145,7 +153,7 @@ def test_first_sync_creates_local_subscription_refreshes_and_reads_result(resin_
     assert resin.sync(config, root=tmp_path) == 1
 
     row, = state["subscriptions"]
-    assert row["name"] == "nodes-dedicated"
+    assert row["name"] == "nodes-dedicated-20261113"
     assert row["source_type"] == "local"
     assert row["content"] == PROXY_A + "\n"
     assert [(method, path) for method, path, *_ in state["requests"]] == [
@@ -175,7 +183,10 @@ def test_existing_subscription_merges_all_exports_and_remains_idempotent(resin_s
 
 def test_exact_name_is_found_on_later_page_without_modifying_similar_names(resin_server, tmp_path):
     config, state = resin_server
-    similar = [subscription(id=f"other-{i}", name=f"nodes-dedicated-{i}") for i in range(101)]
+    similar = [
+        subscription(id=f"other-{i}", name=f"nodes-dedicated-20261113-{i}")
+        for i in range(101)
+    ]
     state["subscriptions"] = similar + [subscription()]
     export(tmp_path, "account", PROXY_A)
 
@@ -184,7 +195,7 @@ def test_exact_name_is_found_on_later_page_without_modifying_similar_names(resin
     queries = [query for method, path, query, *_ in state["requests"]
                if method == "GET" and path == "/api/v1/subscriptions"]
     assert [query["offset"] for query in queries] == [["0"], ["100"]]
-    assert all(query["keyword"] == ["nodes-dedicated"] for query in queries)
+    assert all(query["keyword"] == ["nodes-dedicated-20261113"] for query in queries)
     assert all(row["content"] == PROXY_OLD + "\n" for row in similar)
     assert state["create_count"] == 0
     assert state["subscriptions"][-1]["content"] == PROXY_OLD + "\n" + PROXY_A + "\n"

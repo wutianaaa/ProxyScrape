@@ -13,6 +13,7 @@ FIELDS = {
     "cloud_mail_email": "CLOUD_MAIL_EMAIL",
     "cloud_mail_password": "CLOUD_MAIL_PASSWORD",
     "browser_path": "BROWSER_PATH",
+    "browser_proxy": "BROWSER_PROXY",
     "turnstile_extension_path": "TURNSTILE_EXTENSION_PATH",
     "resin_url": "RESIN_URL",
     "resin_admin_token": "RESIN_ADMIN_TOKEN",
