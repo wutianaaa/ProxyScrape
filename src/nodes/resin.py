@@ -27,6 +27,13 @@ def _proxy_lines(content):
     return [line.strip() for line in content.splitlines() if line.strip()]
 
 
+def _latest_proxy_file(root):
+    paths = list((root / "node").glob("proxies_*.txt"))
+    if not paths:
+        return None
+    return max(paths, key=lambda path: (path.stat().st_mtime_ns, path.name))
+
+
 def _find_subscription(request, name):
     offset = 0
     matches = []
@@ -52,9 +59,8 @@ def _find_subscription(request, name):
 
 def sync(config, *, root=None, skip_empty=False):
     root = Path.cwd() if root is None else Path(root)
-    proxies = []
-    for path in sorted((root / "node").glob("proxies_*.txt")):
-        proxies.extend(_proxy_lines(path.read_text(encoding="utf-8-sig")))
+    path = _latest_proxy_file(root)
+    proxies = [] if path is None else _proxy_lines(path.read_text(encoding="utf-8-sig"))
     if not proxies:
         if skip_empty:
             log("没有已导出的节点，未同步 Resin")
@@ -98,7 +104,6 @@ def sync(config, *, root=None, skip_empty=False):
                     raise RuntimeError(
                         f"Resin 订阅 {name} 不是逐行 HTTP 代理文本，请更换专用订阅名"
                     )
-                proxies = previous_lines + proxies
             content = "\n".join(dict.fromkeys(proxies)) + "\n"
             if existing:
                 subscription_id = existing.get("id")

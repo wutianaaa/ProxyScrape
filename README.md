@@ -7,7 +7,7 @@
 [![GHCR](https://img.shields.io/badge/GHCR-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)](https://github.com/dnslin/nodes/pkgs/container/nodes)
 
 - **每日自动运行**：GitHub Actions 直接运行 Python，无需为 Nodes 单独部署服务器。
-- **Resin 同步**：所有账号的节点合并到一个专用订阅，保留已有节点并去重。
+- **Resin 同步**：每次只同步最新一次导出，单账号通常为 100 个节点，并覆盖当天专用订阅。
 - **服务器部署**：Docker 内置浏览器和虚拟显示器，账号与节点自动取回本机。
 
 ## GitHub Actions

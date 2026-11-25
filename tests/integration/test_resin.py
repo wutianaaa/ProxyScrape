@@ -1,6 +1,7 @@
 """Verify Resin synchronization against a real, offline localhost HTTP service."""
 
 import json
+import os
 import socket
 import threading
 from datetime import date
@@ -126,11 +127,13 @@ def resin_server(monkeypatch):
         thread.join()
 
 
-def export(root, name, *proxies):
+def export(root, name, *proxies, modified_ns=None):
     directory = root / "node"
     directory.mkdir(exist_ok=True)
     path = directory / f"proxies_{name}.txt"
     path.write_text("\n".join(proxies) + "\n", encoding="utf-8")
+    if modified_ns is not None:
+        os.utime(path, ns=(modified_ns, modified_ns))
     return path
 
 
@@ -165,20 +168,20 @@ def test_first_sync_creates_local_subscription_refreshes_and_reads_result(resin_
     assert all(auth == "Bearer test-admin" for *_, auth in state["requests"])
 
 
-def test_existing_subscription_merges_all_exports_and_remains_idempotent(resin_server, tmp_path):
+def test_existing_subscription_is_replaced_with_only_latest_export(resin_server, tmp_path):
     config, state = resin_server
     state["subscriptions"] = [subscription()]
-    export(tmp_path, "account_a", PROXY_A, PROXY_A)
-    export(tmp_path, "account_b", PROXY_B, PROXY_A, PROXY_OLD)
+    export(tmp_path, "old", PROXY_OLD, modified_ns=1_700_000_000_000_000_000)
+    export(tmp_path, "latest", PROXY_B, PROXY_B, modified_ns=1_700_000_001_000_000_000)
 
-    assert resin.sync(config, root=tmp_path) == 3
-    assert resin.sync(config, root=tmp_path) == 3
+    assert resin.sync(config, root=tmp_path) == 1
+    assert resin.sync(config, root=tmp_path) == 1
 
     assert len(state["subscriptions"]) == 1
     assert state["create_count"] == 0
-    assert state["subscriptions"][0]["content"].splitlines() == [PROXY_OLD, PROXY_A, PROXY_B]
+    assert state["subscriptions"][0]["content"].splitlines() == [PROXY_B]
     updates = [payload for method, _, _, payload, _ in state["requests"] if method == "PATCH"]
-    assert updates == [{"content": "\n".join([PROXY_OLD, PROXY_A, PROXY_B]) + "\n"}] * 2
+    assert updates == [{"content": PROXY_B + "\n"}] * 2
 
 
 def test_exact_name_is_found_on_later_page_without_modifying_similar_names(resin_server, tmp_path):
@@ -190,7 +193,7 @@ def test_exact_name_is_found_on_later_page_without_modifying_similar_names(resin
     state["subscriptions"] = similar + [subscription()]
     export(tmp_path, "account", PROXY_A)
 
-    assert resin.sync(config, root=tmp_path) == 2
+    assert resin.sync(config, root=tmp_path) == 1
 
     queries = [query for method, path, query, *_ in state["requests"]
                if method == "GET" and path == "/api/v1/subscriptions"]
@@ -198,7 +201,7 @@ def test_exact_name_is_found_on_later_page_without_modifying_similar_names(resin
     assert all(query["keyword"] == ["nodes-dedicated-20261113"] for query in queries)
     assert all(row["content"] == PROXY_OLD + "\n" for row in similar)
     assert state["create_count"] == 0
-    assert state["subscriptions"][-1]["content"] == PROXY_OLD + "\n" + PROXY_A + "\n"
+    assert state["subscriptions"][-1]["content"] == PROXY_A + "\n"
 
 
 @pytest.mark.parametrize(
