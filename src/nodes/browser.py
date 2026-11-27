@@ -113,7 +113,7 @@ def _read_state(tab):
     return state
 
 
-def solve_turnstile(headless=False, timeout=120, config=None):
+def solve_turnstile(headless=False, timeout=120, config=None, with_cookies=False):
     """等待站点原生验证组件，不创建重复 widget，超时保留实际阶段。"""
     from DrissionPage import Chromium
     from DrissionPage.errors import ContextLostError, ElementLostError
@@ -141,7 +141,16 @@ def solve_turnstile(headless=False, timeout=120, config=None):
                 state = _read_state(tab)
                 if state.get("token"):
                     log(f"Turnstile 通过，token 长度={state['tokenLen']}")
-                    return state["token"]
+                    if not with_cookies:
+                        return state["token"]
+                    cookies = {}
+                    if hasattr(tab, "cookies"):
+                        cookies = {
+                            item["name"]: item["value"]
+                            for item in tab.cookies(all_domains=True)
+                            if item.get("domain", "").endswith("proxyscrape.com")
+                        }
+                    return state["token"], cookies
                 if not (state.get("ready") and state.get("hasApi")):
                     stage = "等待页面及 Turnstile API"
                 elif not filled:

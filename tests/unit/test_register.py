@@ -68,6 +68,30 @@ def test_verify_email_normalizes_code_to_lowercase():
     assert captured["files"]["verificationCode"][1] == "ab3de6gh9j"
 
 
+def test_register_reuses_browser_cookies_and_reports_cloudflare_detail(monkeypatch):
+    captured = {}
+
+    class RegisterSession:
+        headers = {}
+        cookies = requests.cookies.RequestsCookieJar()
+
+        def post(self, url, **kwargs):
+            captured["cookies"] = dict(self.cookies)
+            captured.update(kwargs)
+            response = requests.Response()
+            response.status_code = 429
+            response.url = url
+            response.headers["CF-RAY"] = "ray-1"
+            response._content = b"error code: 1015"
+            return response
+
+    monkeypatch.setattr(api.requests, "Session", RegisterSession)
+    with pytest.raises(RuntimeError, match="429.*CF-RAY=ray-1.*1015.*BROWSER_PROXY"):
+        api.register("user@example.org", "secret", "token", {"cf_clearance": "browser-cookie"})
+    assert captured["cookies"] == {"cf_clearance": "browser-cookie"}
+    assert captured["data"]["cf_turnstile_token"] == "token"
+
+
 def setup_flow(monkeypatch):
     monkeypatch.setattr(app, "CloudMail", Mail)
     monkeypatch.setattr(app, "solve_turnstile", lambda **kw: "challenge-token")

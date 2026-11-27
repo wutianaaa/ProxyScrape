@@ -70,8 +70,11 @@ def _register_once(
     log(f"Cloud Mail 邮箱: {email}")
     after_id = max((row["emailId"] for row in mail.list_messages(email)), default=0)
     password = "Ps" + "".join(random.choices(string.ascii_letters + string.digits, k=10)) + "!9"
-    token = solve_turnstile(headless=headless, timeout=challenge_timeout, config=config)
-    session, access_token, userdata = api.register(email, password, token)
+    challenge = solve_turnstile(
+        headless=headless, timeout=challenge_timeout, config=config, with_cookies=True
+    )
+    token, cookies = challenge if isinstance(challenge, tuple) else (challenge, None)
+    session, access_token, userdata = api.register(email, password, token, cookies)
     rec = {
         "email": email,
         "password": password,

@@ -28,9 +28,11 @@ HEADERS = {
 }
 
 
-def register(email, password, turnstile_token):
+def register(email, password, turnstile_token, cookies=None):
     s = requests.Session()
     s.headers.update(HEADERS)
+    if cookies:
+        s.cookies.update(cookies)
     r = s.post(
         PS_REGISTER,
         data={
@@ -41,7 +43,19 @@ def register(email, password, turnstile_token):
         timeout=30,
     )
     log(f"注册响应 HTTP {r.status_code}")
-    r.raise_for_status()
+    if not r.ok:
+        detail = r.text.strip().replace("\n", " ")[:300]
+        ray = r.headers.get("CF-RAY", "")
+        hint = ""
+        if r.status_code == 429 or "1015" in detail:
+            hint = "；Cloudflare 已限流该出口 IP，请更换 BROWSER_PROXY 或稍后重试"
+        elif r.status_code == 403:
+            hint = "；Cloudflare 拒绝该请求，请确认 BROWSER_PROXY 不是机房/共享 IP"
+        raise RuntimeError(
+            f"注册 HTTP {r.status_code}"
+            f"{' CF-RAY=' + ray if ray else ''}"
+            f"：{detail or '空响应'}{hint}"
+        )
     data = r.json()
     token = data.get("access_token")
     if not token:
